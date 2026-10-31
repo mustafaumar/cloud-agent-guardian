@@ -1,4 +1,6 @@
-# cloud-agent-guardian
+# Cloud Security Guardian: an AI Agent That Hardens Your Google Cloud Project
+## Phase 01 - 
+### Set up your Google Cloud account
 ## Phase 02 - Project Setup
 ### 2.1 - Create a project
 ```
