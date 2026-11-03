@@ -26,6 +26,9 @@ EOF
 source ~/lab-env.sh
 gcloud config set project "$PROJECT_ID"
 ```
+
+<img width="843" height="208" alt="Screenshot 2026-11-03 181251" src="https://github.com/user-attachments/assets/bc99858b-28ed-4c6b-a966-f7c61530290b" />
+
 ### 2.3 Turn on the APIs
 ```
 gcloud services enable \
@@ -35,10 +38,12 @@ gcloud services enable \
   cloudresourcemanager.googleapis.com \
   iam.googleapis.com
 ```
+
+<img width="985" height="136" alt="Screenshot 2026-11-03 175540" src="https://github.com/user-attachments/assets/b1a1fc83-8a93-4755-91ae-f46d62763f46" />
+
 ## Phase 03 - Plant the problems
 ### 3.1 - A public bucket with “customer data”
 ```
-bash
 gcloud storage buckets create "gs://$BUCKET" \
   --location="$REGION" --uniform-bucket-level-access
 
@@ -52,6 +57,9 @@ gcloud storage cp customers.csv "gs://$BUCKET/customers.csv" --cache-control="no
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
   --member=allUsers --role=roles/storage.objectViewer
 ```
+
+<img width="1547" height="416" alt="Screenshot 2026-11-03 181546" src="https://github.com/user-attachments/assets/c88fb6eb-635e-4893-8710-c2ea6639c8d8" />
+
 ### 3.2 - Prove it is exposed
 ```
 curl -s -o /dev/null -w "Anonymous read: %{http_code}\n" \
@@ -60,6 +68,9 @@ curl -s -o /dev/null -w "Anonymous read: %{http_code}\n" \
 curl -s "https://storage.googleapis.com/$BUCKET/customers.csv"
 ```
 Expected status code - `200` and the CSV contents
+
+<img width="348" height="78" alt="Screenshot 2026-11-03 181701" src="https://github.com/user-attachments/assets/8c69a523-2554-4619-880b-8e5433d94428" />
+
 
 ### 3.3 - Firewall rules open to the world
 ```
@@ -78,6 +89,9 @@ gcloud compute firewall-rules create allow-ssh-internal-only \
   --network=lab-vpc --direction=INGRESS --action=ALLOW \
   --rules=tcp:22 --source-ranges=10.10.0.0/24
 ```
+
+<img width="1488" height="351" alt="Screenshot 2026-11-03 182531" src="https://github.com/user-attachments/assets/2fe05274-3ac8-42eb-bac8-785582e02d67" />
+
 ### 3.4 - An over-privileged service account
 ```
 gcloud iam service-accounts create legacy-app --display-name="Legacy app (lab)"
@@ -105,6 +119,9 @@ EOF
 pip install -r requirements.txt
 adk --version                # expect: adk, version 2.12.0
 ```
+
+<img width="832" height="57" alt="Screenshot 2026-11-03 182851" src="https://github.com/user-attachments/assets/dbc6f866-cf7c-4d2a-9069-847c393cfe81" />
+
 ### 4.2 - Settings and package file
 ```
 mkdir -p security_guardian
@@ -118,6 +135,9 @@ EOF
 echo "from . import agent" > security_guardian/__init__.py
 cat security_guardian/.env
 ```
+
+<img width="826" height="43" alt="Screenshot 2026-11-03 183015" src="https://github.com/user-attachments/assets/235d4b2c-f8fc-4f3d-9efa-d24317bf2fe7" />
+
 ### 4.3 - The tools
 These are ordinary Python functions. ADK reads each function’s name, docstring and parameters and shows them to Gemini as a tool description, so the docstrings are written for the model as much as for people. Paste the whole block.
 ```
@@ -373,6 +393,10 @@ def disable_firewall_rule(rule_name: str) -> dict:
     }
 EOF
 ```
+
+<img width="988" height="41" alt="Screenshot 2026-11-03 183215" src="https://github.com/user-attachments/assets/4678920c-3eb5-47a7-9717-a121ce60256d" />
+
+
 ### 4.4 - The agent
 ```
 cat > security_guardian/agent.py <<'EOF'
@@ -417,6 +441,8 @@ root_agent = Agent(
 )
 EOF
 ```
+<img width="205" height="248" alt="Screenshot 2026-11-03 183546" src="https://github.com/user-attachments/assets/18e0ecb5-8b85-4112-a47f-349c70cc30b4" />
+
 ## Phase 05 - Test the pieces before you chat
 When an agent misbehaves, the cause is usually a missing permission or a wrong setting, not the model. Check both on their own first.
 
@@ -449,18 +475,19 @@ cd ~/devfest-agent
 export GOOGLE_CLOUD_PROJECT="$PROJECT_ID"
 adk web --port 8080 --allow_origins="https://8080-$WEB_HOST" .
 ```
+<img width="1778" height="318" alt="Screenshot 2026-11-03 183727" src="https://github.com/user-attachments/assets/9a60505e-d031-457f-8fb4-93524a1ae322" />
+
 ### 6.2 - Ask for a scan
 Type this into the message box:
 `Check my project for security problems.`
+<img width="1641" height="634" alt="Screenshot 2026-11-03 184052" src="https://github.com/user-attachments/assets/4e1d0c1d-3083-48cd-b769-bf2c9f7f6c90" />
 
 ## Phase 07 - Fix with human approval
 ### 7.1 - Approve the bucket fix
 `Fix the public bucket.`
 The agent calls make_bucket_private, and ADK stops it before the function runs. A confirmation card appears in the chat:
-
-<img width="434" height="168" alt="download" src="https://github.com/user-attachments/assets/57868646-2b20-4fd7-bba7-2ed5d216ff43" />
 The real ADK 2.12 confirmation card. The payload shows exactly which bucket will change.
-
+<img width="1334" height="528" alt="Screenshot 2026-11-03 184300" src="https://github.com/user-attachments/assets/147c6ccf-c894-499f-afbf-bdf0f0c7b023" />
 - Check that bucket_name is your lab bucket.
 - Tick Confirmed, then click Submit.
 
@@ -473,6 +500,7 @@ gcloud storage buckets get-iam-policy "gs://$BUCKET"
 gcloud storage buckets describe "gs://$BUCKET" | grep -i public
 ```
 Expected: `401` or `403` instead of `200`, no allUsers in the policy, and public access prevention shown as enforced. If you still get 200, wait a minute and retry; access changes take a short time to spread.
+<img width="1372" height="391" alt="Screenshot 2026-11-03 184330" src="https://github.com/user-attachments/assets/b977361f-1d79-463d-8ba4-8720594e7509" />
 
 ### 7.2 - Reject a fix
 Show the room that “no” works too.
@@ -483,6 +511,8 @@ When the card appears, leave Confirmed unticked and click Submit. The function n
 ```
 gcloud compute firewall-rules list --filter="network:lab-vpc"
 ```
+<img width="1372" height="186" alt="Screenshot 2026-11-03 184511" src="https://github.com/user-attachments/assets/a2c8dabd-eee3-4bf9-8ce3-e74cf4f0fef4" />
+
 ### 7.3 - Approve the firewall fixes
 ```
 OK, now disable allow-ssh-from-anywhere and allow-rdp-from-anywhere.
@@ -492,6 +522,8 @@ You get one card per rule, because the instructions say one resource per call. A
 gcloud compute firewall-rules list --filter="network:lab-vpc"
 ```
 Expected: both rules now show DISABLED True, and allow-ssh-internal-only is untouched. If you also want the default-allow-ssh and default-allow-rdp rules handled, ask for them by name.
+<img width="1358" height="473" alt="Screenshot 2026-11-03 184725" src="https://github.com/user-attachments/assets/ad26dad0-5905-47c6-8cb7-9eb235616c57" />
+
 
 ## Phase 08 - The fix it won’t make
 ```
@@ -504,6 +536,8 @@ gcloud projects remove-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:legacy-app@$PROJECT_ID.iam.gserviceaccount.com" \
   --role=roles/editor --condition=None
 ```
+<img width="1340" height="457" alt="Screenshot 2026-11-03 184836" src="https://github.com/user-attachments/assets/c89ffe07-7d51-4e54-a02c-9c111bfecf7a" />
+
 ## Phase 09 - See the audit trail
 Every change the agent made was a normal Google Cloud API call made with your identity, so Cloud Audit Logs recorded it.
 ```
@@ -515,3 +549,53 @@ Look for the bucket IAM change, the bucket update and the firewall patches made 
 
 ## Phase 10 - How it works under the hood
 ### 10.1 - What Gemini actually sees
+ADK turns each function into a declaration like this one for make_bucket_private. This is ADK 2.12’s real output for the function you pasted:
+
+```
+{
+  "description": "Removes public access from one bucket in the lab project.\n\nEnforces public access prevention first, then deletes every IAM grant to\nallUsers or allAuthenticatedUsers. Grants to real identities are kept.\n\nArgs:\n    bucket_name: The bucket name without the gs:// prefix.\n\nReturns:\n    A dict describing what changed.",
+  "name": "make_bucket_private",
+  "parameters_json_schema": {
+    "properties": {
+      "bucket_name": {
+        "title": "Bucket Name",
+        "type": "string"
+      }
+    },
+    "required": [
+      "bucket_name"
+    ],
+    "title": "make_bucket_privateParams",
+    "type": "object"
+  }
+}
+```
+That is why the docstrings are careful: the model picks tools from these descriptions alone. A vague docstring leads to wrong tool choices.
+## 10.2 - What happens when you click Submit
+- Gemini replies with a function call: `make_bucket_private(bucket_name=…)`.
+- ADK sees `require_confirmation=True`, does not run the function, and emits a special `adk_request_confirmation event`. That event is the card you saw.
+- Your click sends back a response with `confirmed: true` or `false`.
+- On true, ADK runs the function and gives its result to Gemini. On false, Gemini receives `This tool call is rejected`.
+
+
+## Phase 14 - Reset and clean up
+### 14.1 - Reset to run the demo again
+```
+source ~/lab-env.sh
+gcloud storage buckets update "gs://$BUCKET" --no-public-access-prevention
+gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" \
+  --member=allUsers --role=roles/storage.objectViewer
+gcloud compute firewall-rules update allow-ssh-from-anywhere --no-disabled
+gcloud compute firewall-rules update allow-rdp-from-anywhere --no-disabled
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:legacy-app@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/editor --condition=None
+```
+Start a New Session in the Dev UI afterwards so the agent does not remember the earlier fixes.
+
+### 14.2 - Delete everything
+```
+gcloud projects delete "$PROJECT_ID"
+rm -rf ~/devfest-agent ~/lab-env.sh customers.csv
+```
+Deleting the project removes the bucket, rules, service account and all charges. The project ID stays reserved for about 30 days.
