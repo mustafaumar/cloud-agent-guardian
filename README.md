@@ -1,6 +1,8 @@
 # Cloud Security Guardian: an AI Agent That Hardens Your Google Cloud Project
-## Phase 01 - 
-### Set up your Google Cloud account
+## Phase 01 - Prerequisites
+- A Google account with a billing account.
+- A browser. Everything runs in Cloud Shell, which already has gcloud, curl and Python.
+- Permission to create projects. A personal account has this by default.
 ## Phase 02 - Project Setup
 ### 2.1 - Create a project
 ```
